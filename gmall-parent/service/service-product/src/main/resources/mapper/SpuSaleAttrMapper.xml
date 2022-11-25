@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper SYSTEM "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jack.gmall.product.mapper.SpuSaleAttrMapper">
+    <resultMap id="selectSaleAttrAndAttrValue" type="com.jack.gmall.model.product.SpuSaleAttr" autoMapping="true">
+        <id property="id" column="id"></id>
+        <collection property="spuSaleAttrValueList" ofType="com.jack.gmall.model.product.SpuSaleAttrValue" autoMapping="true">
+            <id property="id" column="spu_sale_attr_value_id"></id>
+        </collection>
+    </resultMap>
+    <select id="selectSaleAttrBySpuId" resultMap="selectSaleAttrAndAttrValue">
+        SELECT s1.id,
+               s1.spu_id,
+               s1.base_sale_attr_id,
+               s1.sale_attr_name,
+               s2.id AS spu_sale_attr_value_id,
+               s2.sale_attr_value_name
+        FROM spu_sale_attr s1
+                 INNER JOIN spu_sale_attr_value s2 ON s1.base_sale_attr_id = s2.base_sale_attr_id
+        WHERE s1.spu_id = #{spuId}
+    </select>
+
+    <select id="selectSpuAttrBySpuIdAndSkuId" resultMap="selectSaleAttrAndAttrValue">
+        SELECT
+               #平台销售属性 1
+            sa.id,
+            sa.spu_id,
+            sa.base_sale_attr_id,
+            sa.sale_attr_name,
+               #平台销售属性值 n (1)
+            sv.id sale_attr_value_id,
+            sv.sale_attr_value_name,
+               #商品销售属性值 (n)   目的:商品销售属性值选中标记
+            skv.sku_id,
+            IF
+                ( skv.sku_id IS NULL, 0, 1 ) is_checked
+        FROM
+            spu_sale_attr sa
+                #具体商品的具体平台属性和对应的平台属性值,一对多
+                INNER JOIN spu_sale_attr_value sv ON sa.spu_id = sv.spu_id
+                AND sa.base_sale_attr_id = sv.base_sale_attr_id
+                #平台属性值==销售属性值
+                LEFT JOIN sku_sale_attr_value skv ON skv.sale_attr_value_id = sv.id
+                AND skv.sku_id = #{skuId}  WHERE sa.spu_id=#{spuId}  ORDER BY sv.base_sale_attr_id,sv.id
+    </select>
+</mapper>
